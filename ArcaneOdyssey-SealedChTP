@@ -1,0 +1,181 @@
+----- Made by DoomIsEt3rnal -- Atleast 2 chests per 5 mins or rejoin to circumvent anti cheat.
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+local teleportEnabled = true
+local isFetching = false
+local platformInstance = nil
+local returnPosition = Vector3.new(91, 428, 3413)
+local chestNames = {
+	"Gold Sealed Chest",
+	"Silver Sealed Chest",
+	"Bronze Sealed Chest"
+}
+
+-- UI Setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SealedChestFarmUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 260, 0, 160)
+frame.Position = UDim2.new(0.5, -130, 0.1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.BorderSizePixel = 0
+frame.AnchorPoint = Vector2.new(0.5, 0)
+frame.Active = true
+frame.Draggable = true
+frame.BackgroundTransparency = 1
+frame.Parent = screenGui
+
+local shadow = Instance.new("Frame")
+shadow.Size = frame.Size
+shadow.Position = UDim2.new(0, 8, 0, 8)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.3
+shadow.BorderSizePixel = 0
+shadow.ZIndex = 0
+shadow.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Text = "Manual Sealed Chest Farm"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.ZIndex = 2
+title.Parent = frame
+
+local subtitle = Instance.new("TextLabel")
+subtitle.Text = "Total Sealed Chests: 0"
+subtitle.Font = Enum.Font.Gotham
+subtitle.TextSize = 10
+subtitle.Position = UDim2.new(0, 0, 0, 40)
+subtitle.Size = UDim2.new(1, 0, 0, 20)
+subtitle.BackgroundTransparency = 1
+subtitle.TextColor3 = Color3.fromRGB(200, 80, 80)
+subtitle.TextWrapped = true
+subtitle.ZIndex = 2
+subtitle.Parent = frame
+
+local fetchButton = Instance.new("TextButton")
+fetchButton.Text = "Fetch"
+fetchButton.Font = Enum.Font.Gotham
+fetchButton.TextSize = 18
+fetchButton.Size = UDim2.new(0.6, 0, 0, 30)
+fetchButton.Position = UDim2.new(0.2, 0, 0, 75)
+fetchButton.BackgroundColor3 = Color3.fromRGB(60, 170, 255)
+fetchButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+fetchButton.BorderSizePixel = 0
+fetchButton.ZIndex = 2
+fetchButton.Parent = frame
+
+local closeButton = Instance.new("TextButton")
+closeButton.Text = "Close"
+closeButton.Font = Enum.Font.Gotham
+closeButton.TextSize = 18
+closeButton.Size = UDim2.new(0.6, 0, 0, 30)
+closeButton.Position = UDim2.new(0.2, 0, 1, -35)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.BorderSizePixel = 0
+closeButton.ZIndex = 2
+closeButton.Parent = frame
+
+TweenService:Create(frame, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
+
+-- Helpers
+local function destroyPlatform()
+	if platformInstance and platformInstance.Parent then
+		platformInstance:Destroy()
+	end
+end
+
+local function createPlatform()
+	local character = player.Character
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	platformInstance = Instance.new("Part")
+	platformInstance.Size = Vector3.new(10, 1, 10)
+	platformInstance.Anchored = true
+	platformInstance.Position = hrp.Position - Vector3.new(0, 3, 0)
+	platformInstance.Color = Color3.fromRGB(80, 80, 80)
+	platformInstance.Name = "ReturnPlatform"
+	platformInstance.Parent = workspace
+end
+
+local function teleportTo(pos)
+	local character = player.Character or player.CharacterAdded:Wait()
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	local tween = TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+		CFrame = CFrame.new(pos)
+	})
+	tween:Play()
+	tween.Completed:Wait()
+end
+
+-- Chest Fetch Logic
+local function fetchChest()
+	if isFetching then
+		-- Manual cancel → teleport back
+		isFetching = false
+		teleportTo(returnPosition)
+		createPlatform()
+		subtitle.Text = "Total Sealed Chests: " .. #workspace.Map.Temporary:GetChildren()
+		return
+	end
+
+	isFetching = true
+	destroyPlatform()
+
+	-- Get all valid chest parts in Map.Temporary
+	local chestFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Temporary")
+	if not chestFolder then
+		warn("Missing Map/Temporary folder")
+		isFetching = false
+		return
+	end
+
+	local validChests = {}
+	for _, part in pairs(chestFolder:GetDescendants()) do
+		if part:IsA("BasePart") and table.find(chestNames, part.Name) then
+			table.insert(validChests, part)
+		end
+	end
+
+	if #validChests == 0 then
+		warn("No chests found.")
+		isFetching = false
+		return
+	end
+
+	-- Pick one at random
+	local chosen = validChests[math.random(1, #validChests)]
+	subtitle.Text = "You have 5 seconds to grab it - DO NOT OVERUSE!!"
+	teleportTo(chosen.Position)
+
+	task.delay(5, function()
+		if isFetching then
+			isFetching = false
+			teleportTo(returnPosition)
+			createPlatform()
+			subtitle.Text = "Total Sealed Chests: " .. #validChests
+		end
+	end)
+end
+
+-- Events
+fetchButton.MouseButton1Click:Connect(fetchChest)
+
+closeButton.MouseButton1Click:Connect(function()
+	teleportEnabled = false
+	isFetching = false
+	destroyPlatform()
+	screenGui:Destroy()
+end)
