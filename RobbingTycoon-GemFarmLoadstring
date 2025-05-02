@@ -1,3 +1,3 @@
 ----- Made by doomitrell on github.
-local vipLink = "https://raw.githubusercontent.com/doomitrell/scripts/refs/heads/main/RobbingTycoon-GemFarm" - Blank for Public Servers, NOT RECOMMENDED. Buggy.
+local vipLink = "https://raw.githubusercontent.com/doomitrell/scripts/refs/heads/main/RobbingTycoon-GemFarm" -- Blank for Public Servers, NOT RECOMMENDED. Buggy.
 loadstring(game:HttpGet("https://raw.githubusercontent.com/doomitrell/scripts/refs/heads/main/RobbingTycoon-GemFarm"))(vipLink)
