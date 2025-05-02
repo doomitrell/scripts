@@ -1,4 +1,4 @@
------ Made by DoomIsEt3rnal
+----- Made by doomitrell on github - Don't do like over 3 crates id say in the span of atleast 5m or rejoin
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
