@@ -1,0 +1,112 @@
+----- Made by doomitrell on github, don't use this - use the loadstring for it to work properly.
+return function(vipLink)
+	local Players = game:GetService("Players")
+	local TeleportService = game:GetService("TeleportService")
+	local player = Players.LocalPlayer
+
+	local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+	gui.Name = "AutoGemFarmUI"
+	gui.ResetOnSpawn = false
+
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(0, 280, 0, 140)
+	frame.Position = UDim2.new(0.5, -140, 0.1, 0)
+	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	frame.BorderSizePixel = 0
+	frame.Active = true
+	frame.Draggable = true
+	frame.Parent = gui
+
+	local shadow = Instance.new("Frame", frame)
+	shadow.Size = frame.Size
+	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	shadow.BackgroundTransparency = 0.4
+	shadow.BorderSizePixel = 0
+	shadow.ZIndex = 0
+
+	local title = Instance.new("TextLabel", frame)
+	title.Text = "Auto Gem Farm"
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 22
+	title.Size = UDim2.new(1, 0, 0, 40)
+	title.BackgroundTransparency = 1
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+	local subtitle = Instance.new("TextLabel", frame)
+	subtitle.Text = "Fully Automatic - Sit back and shit"
+	subtitle.Font = Enum.Font.Gotham
+	subtitle.TextSize = 12
+	subtitle.Position = UDim2.new(0, 0, 0, 38)
+	subtitle.Size = UDim2.new(1, 0, 0, 25)
+	subtitle.BackgroundTransparency = 1
+	subtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+	local closeBtn = Instance.new("TextButton", frame)
+	closeBtn.Text = "Close"
+	closeBtn.Font = Enum.Font.Gotham
+	closeBtn.TextSize = 16
+	closeBtn.Size = UDim2.new(0.5, 0, 0, 30)
+	closeBtn.Position = UDim2.new(0.25, 0, 1, -40)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+	closeBtn.TextColor3 = Color3.new(1, 1, 1)
+	closeBtn.BorderSizePixel = 0
+
+	local running = true
+
+	closeBtn.MouseButton1Click:Connect(function()
+		running = false
+		gui:Destroy()
+	end)
+
+	local function teleportTo(pos)
+		local char = player.Character or player.CharacterAdded:Wait()
+		local hrp = char:WaitForChild("HumanoidRootPart")
+		hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0)) -- no tweening, offset slightly up
+	end
+
+	task.spawn(function()
+		while running do
+			local chests = {}
+			local rareThings = workspace:FindFirstChild("Forest") and workspace.Forest:FindFirstChild("RareThings")
+			if not rareThings then break end
+
+			for _, folder in ipairs(rareThings:GetChildren()) do
+				if folder:IsA("Folder") and folder.Name == "SmallChest" then
+					local target = folder:FindFirstChild("Target")
+					if target and target:IsA("Model") then
+						local tpPart = target:FindFirstChild("TouchingPart")
+						if tpPart and tpPart:IsA("BasePart") then
+							table.insert(chests, tpPart)
+						end
+					end
+				end
+			end
+
+			if #chests == 0 then
+				break
+			end
+
+			for _, part in ipairs(chests) do
+				if not running then return end
+				teleportTo(part.Position)
+				task.wait(0.2)
+			end
+		end
+
+		task.wait(1)
+
+		-- 🔁 Rejoin logic
+		if vipLink and vipLink ~= "" then
+			local code = vipLink:match("privateServerLinkCode=([%w_-]+)")
+			if code then
+				TeleportService:TeleportToPrivateServer(game.PlaceId, code, {player})
+			else
+				TeleportService:Teleport(game.PlaceId, player)
+			end
+		else
+			TeleportService:Teleport(game.PlaceId, player)
+		end
+	end)
+end
