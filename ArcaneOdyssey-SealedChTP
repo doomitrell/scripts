@@ -1,4 +1,4 @@
------ Made by DoomIsEt3rnal -- Atleast 2 chests per 5 mins or rejoin to circumvent anti cheat.
+----- Made by doomitrell on github -- Atleast 2 chests per 5 mins or rejoin to circumvent anti cheat.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
