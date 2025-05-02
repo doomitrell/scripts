@@ -1,0 +1,146 @@
+----- Made by DoomIsEt3rnal
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local teleportEnabled = true
+local isTweening = false
+local teleportToggle = false
+local platformInstance = nil
+
+local LOCATIONS = {
+	[true] = {position = Vector3.new(15670, 437, 1420), name = "Ravenna"},
+	[false] = {position = Vector3.new(102, 428, 3414), name = "Redwake"}
+}
+
+-- UI references
+local titleLabel
+
+-- Create UI on script load
+local function createUI()
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "TeleportInfoUI"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = player:WaitForChild("PlayerGui")
+
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "MainFrame"
+	mainFrame.Size = UDim2.new(0, 250, 0, 130)
+	mainFrame.Position = UDim2.new(0.5, -125, 0.1, 0)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	mainFrame.BorderSizePixel = 0
+	mainFrame.AnchorPoint = Vector2.new(0.5, 0)
+	mainFrame.BackgroundTransparency = 1
+	mainFrame.ZIndex = 2
+	mainFrame.Active = true
+	mainFrame.Draggable = true
+	mainFrame.Parent = screenGui
+
+	-- Drop shadow (offset by +8, +8)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = mainFrame.Size
+	shadow.Position = UDim2.new(0, 8, 0, 8)
+	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	shadow.BackgroundTransparency = 0.3
+	shadow.BorderSizePixel = 0
+	shadow.ZIndex = 1
+	shadow.Parent = mainFrame
+
+	titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "TitleLabel"
+	titleLabel.Text = "Location: Unknown"
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 20
+	titleLabel.Size = UDim2.new(1, 0, 0, 40)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	titleLabel.ZIndex = 3
+	titleLabel.Parent = mainFrame
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Text = "Y to Teleport"
+	subtitle.Font = Enum.Font.Gotham
+	subtitle.TextSize = 14
+	subtitle.Position = UDim2.new(0, 0, 0, 40)
+	subtitle.Size = UDim2.new(1, 0, 0, 20)
+	subtitle.BackgroundTransparency = 1
+	subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+	subtitle.ZIndex = 3
+	subtitle.Parent = mainFrame
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Text = "Close"
+	closeButton.Font = Enum.Font.Gotham
+	closeButton.TextSize = 18
+	closeButton.Size = UDim2.new(0.6, 0, 0, 30)
+	closeButton.Position = UDim2.new(0.2, 0, 1, -35)
+	closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeButton.BorderSizePixel = 0
+	closeButton.ZIndex = 3
+	closeButton.Parent = mainFrame
+
+	-- Button logic
+	closeButton.MouseButton1Click:Connect(function()
+		teleportEnabled = false
+		if screenGui then screenGui:Destroy() end
+		if platformInstance and platformInstance.Parent then
+			platformInstance:Destroy()
+		end
+	end)
+
+	-- Fade in animation
+	local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(0.5), {BackgroundTransparency = 0})
+	fadeTween:Play()
+end
+
+-- Teleport function with platform + label update
+local function teleportTo(location)
+	if isTweening or not teleportEnabled then return end
+	isTweening = true
+
+	local character = player.Character or player.CharacterAdded:Wait()
+	local hrp = character:WaitForChild("HumanoidRootPart")
+
+	-- Tween the teleport
+	local tween = TweenService:Create(hrp, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+		CFrame = CFrame.new(location.position)
+	})
+	tween:Play()
+	tween.Completed:Wait()
+
+	-- Cleanup previous platform
+	if platformInstance and platformInstance.Parent then
+		platformInstance:Destroy()
+	end
+
+	-- Create new platform
+	platformInstance = Instance.new("Part")
+	platformInstance.Size = Vector3.new(10, 1, 10)
+	platformInstance.Anchored = true
+	platformInstance.Position = location.position - Vector3.new(0, 3, 0)
+	platformInstance.Color = Color3.fromRGB(80, 80, 80)
+	platformInstance.Name = "TeleportPlatform"
+	platformInstance.Parent = workspace
+
+	-- Update UI
+	if titleLabel then
+		titleLabel.Text = "Location: " .. location.name
+	end
+
+	isTweening = false
+end
+
+-- Key input listener
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed or not teleportEnabled then return end
+	if input.KeyCode == Enum.KeyCode.Y then
+		teleportToggle = not teleportToggle
+		teleportTo(LOCATIONS[teleportToggle])
+	end
+end)
+
+-- Initialize UI immediately
+createUI()
