@@ -1,0 +1,182 @@
+----- Made by doomitrell on github
+
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local remote = ReplicatedStorage:WaitForChild("Sockets"):WaitForChild("4kXrrUbQTk9zl8SM+XgY8CtuYYV58miqmChLDyt/Sck=")
+
+-- GUI Setup
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "CorridorBuilderGUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 180)
+frame.Position = UDim2.new(0.5, -125, 0.1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BorderSizePixel = 0
+frame.Draggable = true
+frame.Active = true
+frame.Parent = gui
+
+local uiCorner = Instance.new("UICorner", frame)
+uiCorner.CornerRadius = UDim.new(0, 6)
+
+local blockCountLabel = Instance.new("TextLabel")
+blockCountLabel.Size = UDim2.new(1, -50, 0, 30)
+blockCountLabel.Position = UDim2.new(0, 10, 0, 10)
+blockCountLabel.BackgroundTransparency = 1
+blockCountLabel.TextColor3 = Color3.new(1, 1, 1)
+blockCountLabel.TextScaled = true
+blockCountLabel.Font = Enum.Font.Gotham
+blockCountLabel.Text = "Segments Placed: 0"
+blockCountLabel.Parent = frame
+
+local channelButton = Instance.new("TextButton")
+channelButton.Size = UDim2.new(0, 60, 0, 25)
+channelButton.Position = UDim2.new(0.5, -30, 0, 45)
+channelButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+channelButton.TextColor3 = Color3.new(1, 1, 1)
+channelButton.Text = "Mode: 0"
+channelButton.Font = Enum.Font.Gotham
+channelButton.TextScaled = true
+channelButton.Parent = frame
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 110, 0, 30)
+toggleButton.Position = UDim2.new(0, 10, 1, -40)
+toggleButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Text = "Start"
+toggleButton.Font = Enum.Font.Gotham
+toggleButton.TextScaled = true
+toggleButton.Parent = frame
+
+local reverseButton = Instance.new("TextButton")
+reverseButton.Size = UDim2.new(0, 110, 0, 30)
+reverseButton.Position = UDim2.new(0, 130, 1, -40)
+reverseButton.BackgroundColor3 = Color3.fromRGB(200, 100, 100)
+reverseButton.TextColor3 = Color3.new(1, 1, 1)
+reverseButton.Text = "Reverse"
+reverseButton.Font = Enum.Font.Gotham
+reverseButton.TextScaled = true
+reverseButton.Parent = frame
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.Text = "✕"
+closeButton.Font = Enum.Font.Gotham
+closeButton.TextScaled = true
+closeButton.Parent = frame
+
+-- Part Definitions
+local baseCFrames = {
+	CFrame.new(0, 0, 0),
+	CFrame.new(4, 4, 0),
+	CFrame.new(4, 8, 0),
+	CFrame.new(-4, 4, 0),
+	CFrame.new(-4, 8, 0),
+	CFrame.new(0, 12, 0),
+	CFrame.new(1, 7, 0, -1, 8.742277657347586e-08, 0, -0, 0, 1, 8.742277657347586e-08, 1, 0)
+}
+
+local function getProperties(index)
+	if index == 7 then
+		return {
+			Reflectance = 0,
+			CanCollide = false,
+			Color = Color3.new(0.639, 0.635, 0.647),
+			LightColor = Color3.new(0.949, 0.953, 0.953),
+			Transparency = 0,
+			Size = 6,
+			Material = 5,
+			Shape = 7,
+			Light = 0
+		}
+	else
+		return {
+			Reflectance = 0,
+			CanCollide = true,
+			Color = Color3.new(0.639, 0.635, 0.647),
+			LightColor = Color3.new(0.949, 0.953, 0.953),
+			Transparency = 0,
+			Size = 1,
+			Material = 4,
+			Shape = 1,
+			Light = 0
+		}
+	end
+end
+
+-- State
+local placing = false
+local segmentCount = 0
+local segmentIndex = 0
+local direction = 1
+local channelMode = 0 -- 0 = normal, 1 = even, 2 = odd
+local SEGMENT_SPACING = 3
+
+-- Placement logic
+local function placeSegment()
+	local shouldPlace = false
+	if channelMode == 0 then
+		shouldPlace = true
+	elseif channelMode == 1 then
+		shouldPlace = segmentIndex % 2 == 1
+	elseif channelMode == 2 then
+		shouldPlace = segmentIndex % 2 == 0
+	end
+
+	if shouldPlace then
+		local offsetZ = segmentIndex * SEGMENT_SPACING * direction
+		for i, cf in ipairs(baseCFrames) do
+			local offset = cf + Vector3.new(0, 0, offsetZ)
+			local args = {
+				offset,
+				getProperties(i)
+			}
+			remote:InvokeServer(unpack(args))
+		end
+		segmentCount += 1
+		blockCountLabel.Text = "Segments Placed: " .. segmentCount
+	end
+
+	segmentIndex += 1
+end
+
+-- Coroutine
+local runLoop = coroutine.create(function()
+	while true do
+		if placing then
+			placeSegment()
+		end
+		wait(0.014)
+	end
+end)
+coroutine.resume(runLoop)
+
+-- Button Events
+toggleButton.MouseButton1Click:Connect(function()
+	placing = not placing
+	toggleButton.Text = placing and "Stop" or "Start"
+end)
+
+reverseButton.MouseButton1Click:Connect(function()
+	segmentCount = 0
+	segmentIndex = 0
+	direction *= -1
+	blockCountLabel.Text = "Segments Placed: 0"
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+channelButton.MouseButton1Click:Connect(function()
+	channelMode = (channelMode + 1) % 3
+	channelButton.Text = "Mode: " .. channelMode
+end)
